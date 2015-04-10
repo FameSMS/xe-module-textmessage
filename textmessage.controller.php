@@ -58,6 +58,7 @@ class textmessageController extends textmessage
 		if($args->srk)			$options->srk = $args->srk;
 		if($args->extension) 	$options->extension = $args->extension;
 		if($args->reservdate) 	$options->datetime = $args->reservdate;
+		if($args->route) 		$options->route = $args->route;
 
 		//$options->mode = "test";
 		$result = new stdClass();
