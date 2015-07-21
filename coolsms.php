@@ -2,7 +2,7 @@
 
 /**
  *
- *   Copyright (C) 2008-2014 NURIGO
+ *   Copyright (C) 2008-2015 NURIGO
  *   http://www.coolsms.co.kr
  *
  **/
@@ -11,14 +11,16 @@ class coolsms
 {
 	private $api_key;
 	private	$api_secret;
-	private $host = "https://api.coolsms.co.kr";
-	private $version = 'sms/1.3';
+	private $host = "http://api.coolsms.co.kr/sms";
+	private $version = "1.5";
+	private $sdk_version = "1.1";
 	private $path;
 	private $method;
 	private $timestamp;
 	private $salt;
 	private $result;
 	private $basecamp;
+	private $user_agent;
 
 	public function __construct($api_key, $api_secret, $basecamp=false)
 	{
@@ -31,6 +33,7 @@ class coolsms
 			$this->api_key = $api_key;
 
 		$this->api_secret = $api_secret;
+		$this->user_agent = $_SERVER['HTTP_USER_AGENT'];
 	}
 
 	public function curlProcess()
@@ -50,12 +53,7 @@ class coolsms
 		//Set POST DATA
 		if($this->method)
 		{
-			$header = array("Content-Type:multipart/form-data");
-
-			// route가 있으면 header에 붙여준다. substr 해준 이유는 앞에 @^가 붙기 때문에 자르기 위해서.
-			if($this->content['route']) $header[] = "User-Agent:" . substr($this->content['route'], 1);
-
-			curl_setopt($ch, CURLOPT_HTTPHEADER, $header);
+			curl_setopt($ch, CURLOPT_HTTPHEADER, array("Content-Type:multipart/form-data"));
 			curl_setopt($ch, CURLOPT_POSTFIELDS, $this->content); 
 		}
 		curl_setopt($ch, CURLOPT_TIMEOUT, 10); // TimeOut 값
@@ -100,8 +98,11 @@ class coolsms
 	{
 		$this->salt = uniqid();
 		$this->timestamp = (string)time();
+		if(!$options->User_Agent) $options->User_Agent = sprintf("PHP REST API %s", $this>version);
+		if(!$options->os_platform) $options->os_platform = $this->getOS();
+		if(!$options->dev_lang) $options->dev_lang = sprintf("PHP %s", phpversion());
+		if(!$options->sdk_version) $options->sdk_version = sprintf("PHP SDK %s", $this->sdk_version);
 
-		$options->User_Agent = "PHP REST API v1.0";
 		$options->salt = $this->salt;
 		$options->timestamp = $this->timestamp;
 		if($this->basecamp)
@@ -141,6 +142,7 @@ class coolsms
 	{
 		$this->setMethod('send', 1);
 		$this->addInfos($options);	
+		debugprint($this->getResult());
 		return $this->getResult();
 	}
 	
@@ -218,6 +220,64 @@ class coolsms
 			// Return array
 			return $d;
 		}
+	}
+	function getOS() { 
+		$user_agent = $this->user_agent;
+		$os_platform    =   "Unknown OS Platform";
+		$os_array       =   array(
+								'/windows nt 10/i'     =>  'Windows 10',
+								'/windows nt 6.3/i'     =>  'Windows 8.1',
+								'/windows nt 6.2/i'     =>  'Windows 8',
+								'/windows nt 6.1/i'     =>  'Windows 7',
+								'/windows nt 6.0/i'     =>  'Windows Vista',
+								'/windows nt 5.2/i'     =>  'Windows Server 2003/XP x64',
+								'/windows nt 5.1/i'     =>  'Windows XP',
+								'/windows xp/i'         =>  'Windows XP',
+								'/windows nt 5.0/i'     =>  'Windows 2000',
+								'/windows me/i'         =>  'Windows ME',
+								'/win98/i'              =>  'Windows 98',
+								'/win95/i'              =>  'Windows 95',
+								'/win16/i'              =>  'Windows 3.11',
+								'/macintosh|mac os x/i' =>  'Mac OS X',
+								'/mac_powerpc/i'        =>  'Mac OS 9',
+								'/linux/i'              =>  'Linux',
+								'/ubuntu/i'             =>  'Ubuntu',
+								'/iphone/i'             =>  'iPhone',
+								'/ipod/i'               =>  'iPod',
+								'/ipad/i'               =>  'iPad',
+								'/android/i'            =>  'Android',
+								'/blackberry/i'         =>  'BlackBerry',
+								'/webos/i'              =>  'Mobile'
+							);
+
+		foreach ($os_array as $regex => $value) { 
+			if (preg_match($regex, $user_agent)) {
+				$os_platform    =   $value;
+			}
+		}   
+		return $os_platform;
+	}
+
+	function getBrowser() {
+		$user_agent = $this->user_agent;
+		$browser        =   "Unknown Browser";
+		$browser_array  =   array(
+								'/msie/i'       =>  'Internet Explorer',
+								'/firefox/i'    =>  'Firefox',
+								'/safari/i'     =>  'Safari',
+								'/chrome/i'     =>  'Chrome',
+								'/opera/i'      =>  'Opera',
+								'/netscape/i'   =>  'Netscape',
+								'/maxthon/i'    =>  'Maxthon',
+								'/konqueror/i'  =>  'Konqueror',
+								'/mobile/i'     =>  'Handheld Browser'
+							);
+		foreach ($browser_array as $regex => $value) { 
+			if (preg_match($regex, $user_agent)) {
+				$browser    =   $value;
+			}
+		}
+		return $browser;
 	}
 }
 ?>
