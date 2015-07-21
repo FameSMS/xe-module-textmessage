@@ -199,8 +199,10 @@ class coolsms
 		return $this->getResult();
 	}
 
-	private function objectToArray($d) {
-		if (is_object($d)) {
+	private function objectToArray($d) 
+	{
+		if (is_object($d)) 
+		{
 			// Gets the properties of the given object
 			// with get_object_vars function
 			$d = get_object_vars($d);
@@ -221,7 +223,9 @@ class coolsms
 			return $d;
 		}
 	}
-	function getOS() { 
+
+	function getOS() 
+	{ 
 		$user_agent = $this->user_agent;
 		$os_platform    =   "Unknown OS Platform";
 		$os_array       =   array(
@@ -250,18 +254,21 @@ class coolsms
 								'/webos/i'              =>  'Mobile'
 							);
 
-		foreach ($os_array as $regex => $value) { 
-			if (preg_match($regex, $user_agent)) {
-				$os_platform    =   $value;
+		foreach ($os_array as $regex => $value) 
+		{ 
+			if (preg_match($regex, $user_agent)) 
+			{
+				$os_platform = $value;
 			}
 		}   
 		return $os_platform;
 	}
 
-	function getBrowser() {
+	function getBrowser() 
+	{
 		$user_agent = $this->user_agent;
-		$browser        =   "Unknown Browser";
-		$browser_array  =   array(
+		$browser = "Unknown Browser";
+		$browser_array = array(
 								'/msie/i'       =>  'Internet Explorer',
 								'/firefox/i'    =>  'Firefox',
 								'/safari/i'     =>  'Safari',
@@ -272,12 +279,13 @@ class coolsms
 								'/konqueror/i'  =>  'Konqueror',
 								'/mobile/i'     =>  'Handheld Browser'
 							);
-		foreach ($browser_array as $regex => $value) { 
-			if (preg_match($regex, $user_agent)) {
-				$browser    =   $value;
+		foreach ($browser_array as $regex => $value) 
+		{ 
+			if (preg_match($regex, $user_agent)) 
+			{
+				$browser = $value;
 			}
 		}
 		return $browser;
 	}
 }
-?>
