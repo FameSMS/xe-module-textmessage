@@ -200,9 +200,18 @@ class textmessageModel extends textmessage
 	 */
 	function getResult($args=null)
 	{
-		$oTextmessageModel = &getModel('textmessage');
-		$sms = &$oTextmessageModel->getCoolSMS();
+		$sms = &$this->getCoolSMS();
 		$result = $sms->sent($args);
+		return $result;
+	}
+
+	/**
+	 * @brief 발신번호 리스트 가져오기
+	 */
+	function getSenderNumbers()
+	{
+		$sms = &$this->getCoolSMS();
+		$result = $sms->get_senderid_list();
 		return $result;
 	}
 }
