@@ -13,7 +13,7 @@ class coolsms
 	private	$api_secret;
 	private $host = "http://api.coolsms.co.kr/";
 	private $resource;
-	private $version = "1.5";
+	private $version = "1.6";
 	private $sdk_version = "1.1";
 	private $path;
 	private $method;
@@ -154,7 +154,7 @@ class coolsms
 	 * $path
 	 * 'send' 'sent' 'cancel' 'balance' 
 	 */
-	private function setMethod($resource, $path, $method, $version="1.5")
+	private function setMethod($resource, $path, $method, $version="1.6")
 	{
 		$this->resource = $resource;
 		$this->path = $path;
