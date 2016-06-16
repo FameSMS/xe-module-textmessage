@@ -21,7 +21,8 @@ class coolsms
 	private $salt;
 	private $result;
 	private $basecamp;
-	private $user_agent;
+  private $user_agent;
+  private $error_flag = false;
 
 	/**
 	 * @brief construct
@@ -77,8 +78,8 @@ class coolsms
 		}
 		curl_setopt($ch, CURLOPT_TIMEOUT, 10); // TimeOut 값
 		curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1); // 결과값을 받을것인지
-		
-		$this->result = json_decode(curl_exec($ch));
+
+    $this->result = json_decode(curl_exec($ch));
 
 		// Check connect errors
 		if(curl_errno($ch)) $this->result = curl_error($ch);
@@ -97,7 +98,7 @@ class coolsms
 			foreach($options as $key => $val)
 			{
 				if($key != "image")
-					$this->content[$key] = sprintf("\0%s", $val);
+					$this->content[$key] = sprintf("%s", $val);
 				else
 					$this->content[$key] = "@".realpath("./$val");
 			}
@@ -141,9 +142,14 @@ class coolsms
 		{
 			$options->api_key = $this->api_key;
 		}
-		$options->signature = $this->getSignature();
-		$this->setContent($options);
-		$this->curlProcess();
+    $options->signature = $this->getSignature();
+
+    if($options->type == 'ata' && isset($options->messages)) {
+      $this->sendATA($options);
+    } else {
+      $this->setContent($options);
+      $this->curlProcess();
+    }
 	}
 
 	/**
@@ -178,7 +184,12 @@ class coolsms
 	 */
 	public function send($options) 
 	{
-		$this->setMethod('sms', 'send', 1);
+		if($options->type == 'ata' && isset($options->extension)) {
+      $this->setMethod('sms', 'send', 1, "2");
+      $options = $this->setATAData($options);
+    } else {
+      $this->setMethod('sms', 'send', 1);
+    }
 		$this->addInfos($options);	
 		return $this->result;
 	}
@@ -370,5 +381,142 @@ class coolsms
 			}
 		}
 		return $browser;
-	}
+  }
+
+  /**
+   * 알림톡의 경우 SMS_API v2 로 보내기 위해 새로 데이터를 정렬 해준다. (임시)
+   */
+  function setATAData($options)
+  {
+    $options->extension = json_decode($options->extension);
+
+    $json_data = array();
+    foreach($options->extension as $k => $v)
+    {
+      $obj = new StdClass();
+      $obj->type = 'ata';
+      $obj->to = $v->to;
+      $obj->text = $v->text;
+      $obj->from = $options->from;
+      $obj->template_code = $options->template_code;
+      $obj->sender_key = $options->sender_key;
+      if($options->datetime) $obj->datetime = $options->datetime;
+      if($options->subject) $obj->subject = $options->subject;
+      if($options->country) $obj->country = $options->country;
+      if($options->refname) $obj->refname = $options->refname;
+      $json_data[] = $obj;
+    }
+    $options->messages = json_encode($json_data);
+    unset($options->extension);
+
+    return $options;
+  }
+
+  /**
+   * 알림톡 발송
+   */
+  public function sendATA($options)
+  {
+    $this->method = 0;
+    $this->setContent($options);
+
+    // create group
+    $host = sprintf("%s%s/%s/%s?%s", $this->host, $this->resource, $this->version, "new_group", $this->content);
+    $result = $this->requestGet($host);
+    if($this->error_flag == true) 
+    {
+      $this->result->code = $result;
+      return;
+    }
+    $group_id = $result->group_id;
+
+    // add messages
+    $this->method = 1;
+    $this->setContent($options);
+    $host = sprintf("%s%s/%s/groups/%s/%s", $this->host, $this->resource, $this->version, $group_id, "add_messages.json");
+    $result = $this->requestPOST($host);
+    if($this->error_flag == true) 
+    {
+      $this->result->code = $result;
+      return;
+    }
+
+    // success, error count 구하기 
+    $success_count = 0;
+    $error_count = 0;
+    foreach($result as $k => $v)
+    {
+      $success_count = $success_count + $v->success_count;
+      $error_count = $error_count + $v->error_count;
+    }
+    $this->result->success_count = $success_count;
+    $this->result->error_count = $error_count;
+
+    // send messages
+    $host = sprintf("%s%s/%s/groups/%s/%s", $this->host, $this->resource, $this->version, $group_id, "send");
+    $result = $this->requestPOST($host);
+    if($this->error_flag == true) 
+    {
+      $this->result->code = $result;
+      return;
+    }
+  }
+
+  // http request GET
+  function requestGet($host)
+  {
+    $ch = curl_init(); 
+    curl_setopt($ch, CURLOPT_URL, $host);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, FALSE); 
+    curl_setopt($ch, CURLOPT_SSLVERSION,3); // SSL 버젼 (https 접속시에 필요)
+    curl_setopt($ch, CURLOPT_HEADER, 0); // 헤더 출력 여부
+    curl_setopt($ch, CURLOPT_POST, $this->method); // Post Get 접속 여부
+    curl_setopt($ch, CURLOPT_TIMEOUT, 10); // TimeOut 값
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1); // 결과값을 받을것인지
+
+    $result = json_decode(curl_exec($ch));
+
+    // Check connect errors
+    if(curl_errno($ch)) 
+    {
+      $this->error_flag = true;
+      $result = curl_error($ch);
+    }
+
+    curl_close ($ch);
+    return $result;
+  }
+
+  // http request POST
+  function requestPOST($host)
+  {
+    $ch = curl_init(); 
+    curl_setopt($ch, CURLOPT_URL, $host);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, FALSE); 
+    curl_setopt($ch, CURLOPT_SSLVERSION,3); // SSL 버젼 (https 접속시에 필요)
+    curl_setopt($ch, CURLOPT_HEADER, 0); // 헤더 출력 여부
+    curl_setopt($ch, CURLOPT_POST, $this->method); // Post Get 접속 여부
+    curl_setopt($ch, CURLOPT_TIMEOUT, 10); // TimeOut 값
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1); // 결과값을 받을것인지
+
+    $header = array("Content-Type:multipart/form-data");
+
+    // route가 있으면 header에 붙여준다. substr 해준 이유는 앞에 @^가 붙기 때문에 자르기 위해서.
+    if($this->content['route']) $header[] = "User-Agent:" . substr($this->content['route'], 1);
+
+    curl_setopt($ch, CURLOPT_HTTPHEADER, $header);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, $this->content); 
+
+    $result = json_decode(curl_exec($ch));
+
+    // Check connect errors
+    if(curl_errno($ch)) 
+    {
+      $this->error_flag = true;
+      $result = curl_error($ch);
+    }
+
+    curl_close ($ch);
+    return $result;
+  }
 }
