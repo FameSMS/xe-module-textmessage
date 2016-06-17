@@ -142,6 +142,7 @@ class textmessageModel extends textmessage
 		Context::set('lms_price', $config->lms_price);
 		Context::set('mms_price', $config->mms_price);
 		Context::set('sms_volume', $config->sms_volume);
+		self::$config = $config;
 
 		return self::$config;
 	}
