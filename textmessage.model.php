@@ -19,6 +19,11 @@ class textmessageModel extends textmessage
 			$oModuleModel = getModel('module');
 			$config = $oModuleModel->getModuleConfig('textmessage');
 
+			if(!$config)
+			{
+				$config = new stdClass();
+			}
+
 			// get logged_info
 			$oMemberModel = getModel('member');
 			$logged_info = Context::get('logged_info');
@@ -88,6 +93,10 @@ class textmessageModel extends textmessage
 		if(self::$config === NULL)
 		{
 			$config = $this->getModuleConfig('textmessage');
+			if(!$config)
+			{
+				$config = new stdClass();
+			}
 
 			if (!$config->api_key || !$config->api_secret)
 			{
