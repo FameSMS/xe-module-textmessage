@@ -10,12 +10,12 @@ class textmessageModel extends textmessage
 
 	function init() { }
 
-	/**
-	 * @brief 모듈 환경설정값 가져오기
-	 */
-	function getModuleConfig() 
+	private static $config = NULL;
+	private static $global_config = NULL;
+
+	function getModuleConfig()
 	{
-		if (!$GLOBALS['__textmessage_config__']) 
+		if(self::$global_config === NULL)
 		{
 			$oModuleModel = getModel('module');
 			$config = $oModuleModel->getModuleConfig('textmessage');
@@ -43,14 +43,16 @@ class textmessageModel extends textmessage
 			$config->s_callback = join($callback);  // string
 
 			// admin_phone
-			if (!is_array($config->admin_phones))
+			if(!is_array($config->admin_phones))
+			{
 				$config->admin_phones = explode("|@|", $config->admin_phones);
+			}
 
 			$config->crypt = 'MD5';
-
-			$GLOBALS['__textmessage_config__'] = $config;
+			self::$global_config = $config;
 		}
-		return $GLOBALS['__textmessage_config__'];
+
+		return self::$global_config;
 	}
 
 	/**
@@ -141,7 +143,7 @@ class textmessageModel extends textmessage
 		Context::set('mms_price', $config->mms_price);
 		Context::set('sms_volume', $config->sms_volume);
 
-		return $config;
+		return self::$config;
 	}
 
 	/**
@@ -180,7 +182,7 @@ class textmessageModel extends textmessage
 	/**
 	 * @brief CashInfo 가져오기
 	 **/
-	function getCashInfo($basecamp=false) 
+	function getCashInfo($basecamp=false)
 	{
 		$config = $this->getModuleConfig();
 		$sms = &$this->getCoolSMS($basecamp);
