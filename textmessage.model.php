@@ -7,11 +7,10 @@
  */
 class textmessageModel extends textmessage 
 {
-
-	function init() { }
-
 	private static $config = NULL;
 	private static $global_config = NULL;
+
+	function init() { }
 
 	function getModuleConfig()
 	{
