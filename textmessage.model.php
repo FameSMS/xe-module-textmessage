@@ -7,50 +7,61 @@
  */
 class textmessageModel extends textmessage 
 {
+	private static $config = NULL;
+	private static $global_config = NULL;
 
 	function init() { }
 
 	/**
 	 * @brief 모듈 환경설정값 가져오기
 	 */
-	function getModuleConfig() 
+	function getModuleConfig()
 	{
-		if (!$GLOBALS['__textmessage_config__']) 
+		if(self::$global_config === NULL)
 		{
-			$oModuleModel = getModel('module');
-			$config = $oModuleModel->getModuleConfig('textmessage');
-
-			// get logged_info
-			$oMemberModel = getModel('member');
-			$logged_info = Context::get('logged_info');
-			// 회원정보 보기 페이지에서 $logged_info->password를 unset시키기 때문에 새로 가져와야 한다
-			if(!$logged_info->password) $logged_info = $oMemberModel->getMemberInfoByMemberSrl($logged_info->member_srl);
-
-			if($logged_info)
-			{
-				$config->cs_user_id = $logged_info->user_id;
-				$config->cs_password = $logged_info->password;
-			}
-
-			// country code
-			if (!$config->default_country) $config->default_country = '82';
-			if ($config->default_country == '82') $config->limit_bytes = 80;
-			else $config->limit_bytes = 160;
-
-			// callback
-			$callback = explode("|@|", $config->callback); // source
-			$config->a_callback = $callback;        // array
-			$config->s_callback = join($callback);  // string
-
-			// admin_phone
-			if (!is_array($config->admin_phones))
-				$config->admin_phones = explode("|@|", $config->admin_phones);
-
-			$config->crypt = 'MD5';
-
-			$GLOBALS['__textmessage_config__'] = $config;
+			return self::$global_config;
 		}
-		return $GLOBALS['__textmessage_config__'];
+		$oModuleModel = getModel('module');
+		$config = $oModuleModel->getModuleConfig('textmessage');
+
+		if(!$config)
+		{
+			$config = new stdClass();
+		}
+
+		// get logged_info
+		$oMemberModel = getModel('member');
+		$logged_info = Context::get('logged_info');
+		// 회원정보 보기 페이지에서 $logged_info->password를 unset시키기 때문에 새로 가져와야 한다
+		if(!$logged_info->password) $logged_info = $oMemberModel->getMemberInfoByMemberSrl($logged_info->member_srl);
+
+		if($logged_info)
+		{
+			$config->cs_user_id = $logged_info->user_id;
+			$config->cs_password = $logged_info->password;
+		}
+
+		// country code
+		if (!$config->default_country) $config->default_country = '82';
+		if ($config->default_country == '82') $config->limit_bytes = 80;
+		else $config->limit_bytes = 160;
+
+		// callback
+		$callback = explode("|@|", $config->callback); // source
+		$config->a_callback = $callback;        // array
+		$config->s_callback = join($callback);  // string
+
+		// admin_phone
+		if(!is_array($config->admin_phones))
+		{
+			$config->admin_phones = explode("|@|", $config->admin_phones);
+		}
+
+		$config->crypt = 'MD5';
+		self::$global_config = $config;
+
+
+		return self::$global_config;
 	}
 
 	/**
@@ -84,8 +95,17 @@ class textmessageModel extends textmessage
 	 */
 	function getConfig() 
 	{
+		if(self::$config === NULL)
+		{
+			return self::$config;
+		}
 		$config = $this->getModuleConfig('textmessage');
-		if (!$config->api_key || !$config->api_secret) 
+		if(!$config)
+		{
+			$config = new stdClass();
+		}
+
+		if (!$config->api_key || !$config->api_secret)
 		{
 			return false;
 		}
@@ -95,7 +115,7 @@ class textmessageModel extends textmessage
 		$config->cs_mdrop=0;
 
 		$sms = &$this->getCoolSMS();
-		if ($sms->balance()) 
+		if ($sms->balance())
 		{
 			$remain = $sms->balance();
 			$config->cs_cash = $remain->cash;
@@ -103,7 +123,7 @@ class textmessageModel extends textmessage
 			$config->sms_price = 20;
 			$config->lms_price = 50;
 			$config->mms_price = 200;
-			
+
 			$config->sms_volume = ((int)$config->cs_cash / (int)$config->sms_price) + ((int)$config->cs_point / (int)$config->sms_price) + (int)$cs_mdrop;
 			$config->lms_volume = ((int)$config->cs_cash / (int)$config->lms_price) + ((int)$config->cs_point / (int)$config->lms_price) + ((int)$cs_mdrop / 3);
 			$config->mms_volume = ((int)$config->cs_cash / (int)$config->mms_price) + ((int)$config->cs_point / (int)$config->mms_price) + ((int)$cs_mdrop / 10);
@@ -127,8 +147,8 @@ class textmessageModel extends textmessage
 			{
 				Context::set('cs_is_logged', true);
 			}
-		} 
-		else 
+		}
+		else
 		{
 			Context::set('cs_is_logged', false);
 			Context::set('cs_error_message', '<font color="red">서비스 서버에 연결할 수 없습니다.<br />일부 웹호스팅에서 외부로 나가는 포트 접속을 허용하지 않고 있습니다.<br /></font>');
@@ -140,8 +160,9 @@ class textmessageModel extends textmessage
 		Context::set('lms_price', $config->lms_price);
 		Context::set('mms_price', $config->mms_price);
 		Context::set('sms_volume', $config->sms_volume);
+		self::$config = $config;
 
-		return $config;
+		return self::$config;
 	}
 
 	/**
@@ -180,7 +201,7 @@ class textmessageModel extends textmessage
 	/**
 	 * @brief CashInfo 가져오기
 	 **/
-	function getCashInfo($basecamp=false) 
+	function getCashInfo($basecamp=false)
 	{
 		$config = $this->getModuleConfig();
 		$sms = &$this->getCoolSMS($basecamp);
