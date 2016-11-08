@@ -9,13 +9,14 @@ class textmessageModel extends textmessage
 {
 	protected static $config = NULL;
 	protected static $global_config = NULL;
+	const solution_registration_key = 'K0000238682';
 
 	function init() { }
 
 	/**
 	 * @brief 모듈 환경설정값 가져오기
 	 */
-	function getModuleConfig()
+	public static function getModuleConfig()
 	{
 		if(self::$global_config !== NULL)
 		{
@@ -69,23 +70,28 @@ class textmessageModel extends textmessage
 	 */
 	function getSlnRegKey() 
 	{
-		if (!file_exists($this->module_path.'resale.info.php')) return false;
-		require_once($this->module_path.'resale.info.php');
-		return __SOLUTION_REGISTRATION_KEY__;
+		return self::solution_registration_key;
 	}
 
 	/**
 	 *  @brief CoolSMS class 객체 가져오기
 	 */
-	function &getCoolSMS($basecamp=false) 
+	public static function getCoolSMS($basecamp=false)
 	{
-		$config = $this->getModuleConfig();
-		if (!class_exists('coolsms')) require_once('coolsms.php');
-		
+		$config = self::getModuleConfig();
+		if(!class_exists('coolsms'))
+		{
+			require_once('coolsms.php');
+		}
+
 		if($basecamp)
+		{
 			$sms = new coolsms($config->cs_user_id, $config->cs_password, TRUE);
+		}
 		else
+		{
 			$sms = new coolsms($config->api_key, $config->api_secret);
+		}
 
 		return $sms;
 	}
@@ -99,7 +105,7 @@ class textmessageModel extends textmessage
 		{
 			return self::$config;
 		}
-		$config = $this->getModuleConfig('textmessage');
+		$config = $this->getModuleConfig();
 		if(!$config)
 		{
 			$config = new stdClass();
@@ -114,7 +120,7 @@ class textmessageModel extends textmessage
 		$config->cs_point=0;
 		$config->cs_mdrop=0;
 
-		$sms = &$this->getCoolSMS();
+		$sms = self::getCoolSMS();
 		if ($sms->balance())
 		{
 			$remain = $sms->balance();
@@ -207,12 +213,11 @@ class textmessageModel extends textmessage
 	 **/
 	function getCashInfo($basecamp=false)
 	{
-		$config = $this->getModuleConfig();
-		$sms = &$this->getCoolSMS($basecamp);
-		
+		$sms = self::getCoolSMS($basecamp);
+
 		// get cash info
-		$result = $sms->balance();
-		
+		$result = $sms::balance();
+
 		$obj = new Object();
 		$obj->add('cash', $result->cash);
 		$obj->add('point', $result->point);
@@ -228,7 +233,7 @@ class textmessageModel extends textmessage
 	 */
 	function getResult($args=null)
 	{
-		$sms = &$this->getCoolSMS();
+		$sms = self::getCoolSMS();
 		$result = $sms->sent($args);
 		return $result;
 	}
@@ -238,7 +243,7 @@ class textmessageModel extends textmessage
 	 */
 	function getSenderNumbers()
 	{
-		$sms = &$this->getCoolSMS();
+		$sms = self::getCoolSMS();
 		$result = $sms->get_senderid_list();
 		return $result;
 	}

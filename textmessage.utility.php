@@ -7,7 +7,7 @@
  */
 class CSUtility 
 {
-	function CSUtility() { }
+	function __construct() { }
 
 	function dispStatus($mstat) 
 	{
@@ -20,7 +20,9 @@ class CSUtility
 			case "2":
 				return "전송완료";
 		}
+		return false;
 	}
+
 	function dispResultCode($rcode) 
 	{
 		$statset = array("00" => "정상"
@@ -57,10 +59,12 @@ class CSUtility
 			, "99" => "대기상태"
 		);
 
-		if (isset($statset[$rcode]))
+		if(isset($statset[$rcode]))
+		{
 			return $statset[$rcode];
+		}
 
-		return "Unkown Code";
+		return 'Unkown Code';
 	}
 
 	/**
@@ -80,11 +84,14 @@ class CSUtility
 
 	function dispIndex($no, $page, $count)
 	{
-			if($page == 1)
-				return $no;
-			else
-				return ($page-1)*$count+$no;
-
+		if($page == 1)
+		{
+			return $no;
+		}
+		else
+		{
+			return ($page - 1) * $count + $no;
+		}
 	}
 
 	function dispFullnumber($country, $phonenum) 
@@ -123,12 +130,18 @@ class CSUtility
 	function cutout($msg, $limit) 
 	{
 		$msg = substr($msg, 0, $limit);
-			if (strlen($msg) < $limit)
+		if(strlen($msg) < $limit)
+		{
 			$limit = strlen($msg);
+		}
 
 		$countdown = 0;
-		for ($i = $limit - 1; $i >= 0; $i--) {	
-			if (ord(substr($msg,$i,1)) < 128) break;
+		for($i = $limit - 1; $i >= 0; $i--)
+		{
+			if(ord(substr($msg, $i, 1)) < 128)
+			{
+				break;
+			}
 			$countdown++;
 		}
 
@@ -144,10 +157,14 @@ class CSUtility
 	 **/
 	function abbreviate($msg, $limit) 
 	{
-		if ($limit >= strlen($msg))
+		if($limit >= strlen($msg))
+		{
 			return $msg;
+		}
 		else
+		{
 			return $this->cutout($msg, $limit) . "..";
+		}
 	}
 
 	function strcut_utf8($str, $len, $checkmb=false, $tail='') 
@@ -170,7 +187,8 @@ class CSUtility
 
 		$ret = array();
 		$count = 0;
-		for ($i=0; $i < $len; $i++) {
+		for ($i=0; $i < $len; $i++)
+		{
 			$count += ($checkmb && strlen($m[$i]) > 1)?2:1;
 			if ($count + $tlen > $len) break;
 			$ret[] = $m[$i];
@@ -194,7 +212,6 @@ class CSUtility
 		}
 		return $count;
 	}
-
 }
 /* End of file textmessage.utility.php */
 /* Location: ./modules/textmessage.utility.php */
