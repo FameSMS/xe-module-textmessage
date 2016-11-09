@@ -9,9 +9,8 @@ class textmessageAdminController extends textmessage
 {
 	/**
 	 * @brief initialization
-	 * @return none
 	 **/
-	function init() { }
+	function init() {}
 
 	/**
 	 * @brief 기본설정 module config 에 저장
@@ -23,6 +22,10 @@ class textmessageAdminController extends textmessage
 		// save module configuration.
 		$oModuleControll = getController('module');
 		$output = $oModuleControll->insertModuleConfig('textmessage', $args);
+		if(!$output->toBool())
+		{
+			return $output;
+		}
 
 		$this->setMessage('success_saved');
 		$redirectUrl = getNotEncodedUrl('', 'module', 'admin', 'act', 'dispTextmessageAdminConfig');
@@ -30,7 +33,7 @@ class textmessageAdminController extends textmessage
 	}
 
 	/**
-	 * @brief 예약취소 
+	 * @brief 예약취소
 	 **/
 	function procTextmessageAdminCancelReserv() 
 	{
@@ -50,7 +53,7 @@ class textmessageAdminController extends textmessage
 	}
 
 	/**
-	 * @brif 예약 단체 취소
+	 * @brief 예약 단체 취소
 	 **/
 	function procTextmessageAdminCancelGroup() 
 	{

@@ -12,7 +12,8 @@ class textmessageController extends textmessage
 	/**
 	 * @brief 메시지 전송 
 	 * @param[in] $args
-	 *  $args->type = 'SMS' or 'LMS' or 'MMS' // default = 'SMS'
+	 *  $args->type = 'SMS' or 'LMS' or 'MMS' or 'CTA' or 'ATA' // default = 'SMS'
+	 *  $args->sender_key = '발급받은 센더키'
 	 *  $args->recipient_no = '수신번호'
 	 *  $args->sender_no = '발신번호'
 	 *  $args->content = '메시지 내용'
@@ -28,7 +29,7 @@ class textmessageController extends textmessage
 	function sendMessage($args, $basecamp=FALSE) 
 	{
 		$oTextmessageModel = getModel('textmessage');
-		$sms = &$oTextmessageModel->getCoolSMS($basecamp);
+		$sms = textmessageModel::getCoolSMS($basecamp);
 		$options = new stdClass();
 		if($oTextmessageModel->getSlnRegKey() && !$args->srk)
 		{
@@ -39,14 +40,27 @@ class textmessageController extends textmessage
 		if($args->recipient_no)
 		{
 			if(is_array($args->recipient_no))
-				$options->to = implode(',' , $args->recipient_no);
+			{
+				$options->to = implode(',', $args->recipient_no);
+			}
 			else
+			{
 				$options->to = $args->recipient_no;
+			}
 		}
-		elseif($args->to) 		$options->to = $args->to;
+		elseif($args->to)
+		{
+			$options->to = $args->to;
+		}
 
-		if($args->sender_no) 	$options->from = $args->sender_no;
-		elseif($args->from)		$options->from = $args->from;
+		if($args->sender_no)
+		{
+			$options->from = $args->sender_no;
+		}
+		elseif($args->from)
+		{
+			$options->from = $args->from;
+		}
 
 		if($args->type)			$options->type = $args->type;
 		if($args->attachment) 	$options->image = $args->attachment;
@@ -63,11 +77,8 @@ class textmessageController extends textmessage
 		if($args->sender_key)	$options->sender_key = $args->sender_key;
 		if($args->template_code) $options->template_code = $args->template_code;
 
-		//$options->mode = "test";
-		$result = new stdClass();
-
 		// 문자 전송
-		$result = $sms->send($options);
+		$result = $sms::send($options);
 
 		$output = new Object();
 		if($result->code)
@@ -76,11 +87,10 @@ class textmessageController extends textmessage
 			$result->success_count = 0;
 			$output->add('error_code', $result->code);
 		}
-		
+
 		$output->add('success_count', $result->success_count);
 		$output->add('failure_count', $result->error_count);
 		if($result->group_id) $output->add('group_id', $result->group_id);
-
 		return $output;
 	}
 
@@ -89,15 +99,18 @@ class textmessageController extends textmessage
 	 */
 	function cancelMessage($msgid, $basecamp=FALSE)
 	{
-		$oTextmessageModel = getModel('textmessage');
-		$sms = &$oTextmessageModel->getCoolSMS($basecamp);
+		$sms = textmessageModel::getCoolSMS($basecamp);
 		$options = new stdClass();
 		$options->mid = $msgid;
-		$result = $sms->cancel($options);
-		if($result->code)	
+		$result = $sms::cancel($options);
+		if($result->code)
+		{
 			return new Object(-1, $result->code);
+		}
 		else
+		{
 			return new Object();
+		}
 	}
 
 	/**
@@ -105,13 +118,14 @@ class textmessageController extends textmessage
 	 **/
 	function cancelGroupMessages($grpid, $basecamp=FALSE)
 	{
-		$oTextmessageModel = getModel('textmessage');
-		$sms = &$oTextmessageModel->getCoolSMS($basecamp);
+		$sms = textmessageModel::getCoolSMS($basecamp);
 		$options = new stdClass();
 		$options->gid = $grpid;
-		$result = $sms->cancel($options);
+		$result = $sms::cancel($options);
 		if($result->code)
+		{
 			return new Object(-1, $result->code);
+		}
 		return new Object();
 	}
 }
