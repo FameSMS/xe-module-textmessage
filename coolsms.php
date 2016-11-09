@@ -50,18 +50,13 @@ class coolsms
 	{
 		$ch = curl_init();
 		// Set host. 1 = POST , 0 = GET
-		$host = null;
 		if(self::$method == 1)
 		{
 			$host = sprintf("%s%s/%s/%s", self::$host, self::$resource, self::$version, self::$path);
 		}
-		else if(self::$method == 0)
+		else
 		{
 			$host = sprintf("%s%s/%s/%s?%s", self::$host, self::$resource, self::$version, self::$path, self::$content);
-		}
-		if($host === null)
-		{
-			return;
 		}
 
 		curl_setopt($ch, CURLOPT_URL, $host);
