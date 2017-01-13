@@ -99,13 +99,13 @@ class textmessageModel extends textmessage
 	/**
 	 * @brief 환경값 읽어오기
 	 */
-	function getConfig() 
+	public static function getConfig()
 	{
 		if(self::$config !== NULL)
 		{
 			return self::$config;
 		}
-		$config = $this->getModuleConfig();
+		$config = self::getModuleConfig();
 		if(!$config)
 		{
 			$config = new stdClass();
@@ -121,9 +121,9 @@ class textmessageModel extends textmessage
 		$config->cs_mdrop=0;
 
 		$sms = self::getCoolSMS();
-		if ($sms->balance())
+		if ($sms::balance())
 		{
-			$remain = $sms->balance();
+			$remain = $sms::balance();
 			$config->cs_cash = $remain->cash;
 			$config->cs_point = $remain->point;
 			$config->sms_price = 20;
@@ -181,7 +181,7 @@ class textmessageModel extends textmessage
 	function getConfigValue(&$obj, $key, $type=null) 
 	{
 		$return_value = null;
-		$config = $this->getModuleConfig();
+		$config = self::getModuleConfig();
 		$fieldname = $config->{$key};
 		if (!$fieldname) return null;
 

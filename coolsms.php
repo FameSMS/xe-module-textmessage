@@ -10,6 +10,7 @@ class coolsms
 {
 	private static $api_key;
 	private static $api_secret;
+	private static $coolsms_user;
 	private static $host = "http://api.coolsms.co.kr/";
 	private static $resource;
 	private static $version = "1.6";

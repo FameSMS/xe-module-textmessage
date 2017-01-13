@@ -72,8 +72,7 @@ class textmessageAdminView extends textmessage
 	 */
 	function dispTextmessageAdminConfig() 
 	{
-		$oTextmessageModel = getModel('textmessage');
-		$config = $oTextmessageModel->getConfig();
+		$config = textmessageModel::getConfig();
 
 		$callback_url = Context::getDefaultUrl();
 		$callback_url_style = "";
@@ -91,8 +90,7 @@ class textmessageAdminView extends textmessage
 	//발송내역 페이지 
 	function dispTextmessageAdminUsageStatement() 
 	{
-		$oTextmessageModel = getModel('textmessage');
-		$config = $oTextmessageModel->getModuleConfig();
+		$config = textmessageModel::getModuleConfig();
 		$sms = textmessageModel::getCoolSMS();
 
 		$count = Context::get('page_no');
@@ -116,7 +114,7 @@ class textmessageAdminView extends textmessage
 		$options->count = $count;
 		$options->page = Context::get('page');
 
-		$output = $sms->sent($options);
+		$output = $sms::sent($options);
 
 		$output->total_page = ceil($output->total_count / $count);
 		$page = new PageHandler($output->total_count, $output->total_page, 1, $count);
