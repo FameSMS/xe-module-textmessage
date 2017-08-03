@@ -76,6 +76,8 @@ class textmessageController extends textmessage
 		if($args->app_version)  $options->app_version = $args->app_version;
 		if($args->sender_key)	$options->sender_key = $args->sender_key;
 		if($args->template_code) $options->template_code = $args->template_code;
+		if($args->button_name) $options->button_name = $args->button_name;
+		if($args->button_url) $options->button_url = $args->button_url;
 
 		// 문자 전송
 		$result = $sms::send($options);

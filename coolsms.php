@@ -218,6 +218,7 @@ class coolsms
 	 */
 	public static function send($options)
 	{
+		$options->type = strtolower($options->type);
 		if(in_array($options->type, array('ata', 'cta')))
 		{
 			self::setMethod('sms', 'send', 1, '2');
