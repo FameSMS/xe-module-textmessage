@@ -139,7 +139,7 @@ class textmessageModel extends textmessage
 			$config->lms_price = 50;
 			$config->mms_price = 200;
 			$config->ata_price = 15;
-			$config->cta_price = 25;
+			$config->cta_price = 20;
 
 			$config->sms_volume = ((int)$config->cs_cash / (int)$config->sms_price) + ((int)$config->cs_point / (int)$config->sms_price);
 			$config->lms_volume = ((int)$config->cs_cash / (int)$config->lms_price) + ((int)$config->cs_point / (int)$config->lms_price);
