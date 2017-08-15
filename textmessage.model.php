@@ -36,16 +36,25 @@ class textmessageModel extends textmessage
 		// 회원정보 보기 페이지에서 $logged_info->password를 unset시키기 때문에 새로 가져와야 한다
 		if(!$logged_info->password) $logged_info = $oMemberModel->getMemberInfoByMemberSrl($logged_info->member_srl);
 
-		if($logged_info)
+		if(Context::get('is_logged'))
 		{
 			$config->cs_user_id = $logged_info->user_id;
 			$config->cs_password = $logged_info->password;
 		}
 
 		// country code
-		if (!$config->default_country) $config->default_country = '82';
-		if ($config->default_country == '82') $config->limit_bytes = 90;
-		else $config->limit_bytes = 160;
+		if(!$config->default_country)
+		{
+			$config->default_country = '82';
+		}
+		if($config->default_country == '82')
+		{
+			$config->limit_bytes = 90;
+		}
+		else
+		{
+			$config->limit_bytes = 160;
+		}
 
 		// callback
 		$callback = explode("|@|", $config->callback); // source
