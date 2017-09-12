@@ -36,7 +36,7 @@ class textmessageController extends textmessage
 			$options->srk = $oTextmessageModel->getSlnRegKey();
 		}
 
-		// 기존 Textmessage 와 다른 args 옵션으로 인한 동기화하기 
+		// 기존 Textmessage 와 다른 args 옵션으로 인한 동기화하기
 		if($args->recipient_no)
 		{
 			if(is_array($args->recipient_no))
