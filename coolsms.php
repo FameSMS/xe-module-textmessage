@@ -12,7 +12,7 @@ class coolsms
 	public static $api_version = '3';
 	private static $api_key;
 	private static $api_secret;
-	// 서비스 될 예정
+	// Access Token is not working as now.
 	private static $access_token;
 	private static $resource;
 	private static $result;
