@@ -505,7 +505,7 @@ class coolsms
 	 * Set authentivate information for kakao.
 	 * @param $options
 	 */
-	private static function AddAtInfos($options)
+	private static function addAtInfos($options)
 	{
 		self::$atSalt = uniqid();
 		self::$atTimestamp = (string)time();
