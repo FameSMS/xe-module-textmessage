@@ -8,31 +8,43 @@
  **/
 class coolsms
 {
+	public static $host = "https://solapi.com";
+	public static $api_version = '3';
 	private static $api_key;
 	private static $api_secret;
-	private static $coolsms_user;
-	private static $host = "http://api.coolsms.co.kr/";
+	// 서비스 될 예정
+	private static $access_token;
 	private static $resource;
-	private static $version = "1.6";
-	private static $sdk_version = "1.1";
-	private static $path;
-	private static $method;
-	private static $timestamp;
-	private static $salt;
 	private static $result;
 	private static $basecamp;
-	private static $user_agent;
 	private static $content;
+	private static $user_agent;
+	private static $date;
+	private static $salt;
+	private static $signature;
+	public static $api_name = 'GroupMessage';
 	public static $error_flag = false;
+
+	// This for KaKao
+	public static $atHost = 'http://api.coolsms.co.kr/';
+
+	private static $atResource;
+	private static $atPath;
+	private static $atMethod;
+	private static $atVersion = '1.6';
+	private static $atSdkVersion = '1.1';
+	private static $atSalt;
+	private static $atTimestamp;
+	private static $atContent;
 
 	/**
 	 * @brief construct
 	 */
-	public function __construct($api_key, $api_secret, $basecamp = false)
+	public function __construct($api_key, $api_secret, $basecamp = false, $access_token = null)
 	{
 		if($basecamp)
 		{
-			self::$coolsms_user = $api_key;
+			self::$access_token = $access_token;
 			self::$basecamp = true;
 		}
 		else
@@ -44,48 +56,29 @@ class coolsms
 		self::$user_agent = $_SERVER['HTTP_USER_AGENT'];
 	}
 
+
 	/**
 	 * @brief process curl
 	 */
 	public static function curlProcess()
 	{
 		$ch = curl_init();
-		// Set host. 1 = POST , 0 = GET
-		if(self::$method == 1)
-		{
-			$host = sprintf("%s%s/%s/%s", self::$host, self::$resource, self::$version, self::$path);
-		}
-		else
-		{
-			$host = sprintf("%s%s/%s/%s?%s", self::$host, self::$resource, self::$version, self::$path, self::$content);
-		}
+		$url = sprintf("%s/%s/%s/%s", self::$host, self::$api_name, self::$api_version, self::$resource);
 
-		curl_setopt($ch, CURLOPT_URL, $host);
+		curl_setopt($ch, CURLOPT_URL, $url);
 		curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, FALSE);
-		curl_setopt($ch, CURLOPT_SSLVERSION, 3); // SSL 버젼 (https 접속시에 필요)
-		curl_setopt($ch, CURLOPT_HEADER, 0); // 헤더 출력 여부
-		curl_setopt($ch, CURLOPT_POST, self::$method); // Post Get 접속 여부
+		curl_setopt($ch, CURLOPT_HEADER, 0);
+		curl_setopt($ch, CURLOPT_POST, 1);
 
-		// Set POST DATA
-		if(self::$method)
-		{
-			$header = array("Content-Type:multipart/form-data");
-
-			// route가 있으면 header에 붙여준다.
-			if(self::$content['route'])
-			{
-				$header[] = "User-Agent:" . self::$content['route'];
-			}
-
-			curl_setopt($ch, CURLOPT_HTTPHEADER, $header);
-			curl_setopt($ch, CURLOPT_POSTFIELDS, self::$content);
-		}
-		curl_setopt($ch, CURLOPT_TIMEOUT, 10); // TimeOut 값
-		curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1); // 결과값을 받을것인지
-
+		$header = array(
+			"Content-Type: application/json",
+			'Authorization: HMAC-MD5 ApiKey='.self::$api_key.', Date='.self::$date.', Salt='.self::$salt.', Signature='.self::$signature,
+		);
+		curl_setopt($ch, CURLOPT_HTTPHEADER, $header);
+		curl_setopt($ch, CURLOPT_POSTFIELDS, self::$content);
+		curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+		curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
 		self::$result = json_decode(curl_exec($ch));
-
-		// unless http status code is 200. throw exception.
 		$http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
 		if($http_code != 200)
 		{
@@ -102,104 +95,14 @@ class coolsms
 		curl_close($ch);
 	}
 
-	/**
-	 * set http body content
-	 */
-	private static function setContent($options)
-	{
-		if(self::$method)
-		{
-			self::$content = array();
-			foreach($options as $key => $val)
-			{
-				if($key != "image")
-				{
-					self::$content[$key] = sprintf("%s", $val);
-				}
-				else
-				{
-					self::$content[$key] = "@" . realpath("./$val");
-				}
-			}
-		}
-		else
-		{
-			foreach($options as $key => $val)
-			{
-				self::$content .= $key . "=" . urlencode($val) . "&";
-			}
-		}
-	}
+
 
 	/**
 	 * make a signature with hash_hamac then return the signature
 	 */
-	private static function getSignature()
+	private static function getSignature($date, $salt)
 	{
-		return hash_hmac('md5', (string)self::$timestamp . self::$salt, self::$api_secret);
-	}
-
-	/**
-	 * set authenticate information
-	 */
-	private static function addInfos($options)
-	{
-		self::$salt = uniqid();
-		self::$timestamp = (string)time();
-		if(!$options->User_Agent)
-		{
-			$options->User_Agent = sprintf("PHP REST API %s", self::$version);
-		}
-		if(!$options->os_platform)
-		{
-			$options->os_platform = self::getOS();
-		}
-		if(!$options->dev_lang)
-		{
-			$options->dev_lang = sprintf("PHP %s", phpversion());
-		}
-		if(!$options->sdk_version)
-		{
-			$options->sdk_version = sprintf("PHP SDK %s", self::$sdk_version);
-		}
-
-		$options->salt = self::$salt;
-		$options->timestamp = self::$timestamp;
-		if(self::$basecamp)
-		{
-			$options->coolsms_user = self::$coolsms_user;
-		}
-		else
-		{
-			$options->api_key = self::$api_key;
-		}
-		$options->signature = self::getSignature();
-
-		if(in_array($options->type, array('ata', 'cta')) && isset($options->messages))
-		{
-			self::sendATA($options);
-		}
-		else
-		{
-			self::setContent($options);
-			self::curlProcess();
-		}
-	}
-
-	/**
-	 * $resource
-	 * 'sms', 'senderid', 'alimtalk'
-	 * $method
-	 * GET = 0, POST, 1
-	 * $path
-	 * 'send' 'sent' 'cancel' 'balance'
-	 */
-	private static function setMethod($resource, $path, $method, $version = "1.6")
-	{
-		self::$resource = $resource;
-		self::$path = $path;
-		self::$method = $method;
-		self::$version = $version;
+		return hash_hmac('md5', $date . $salt, self::$api_secret);
 	}
 
 	/**
@@ -219,18 +122,8 @@ class coolsms
 	public static function send($options)
 	{
 		$options->type = strtolower($options->type);
-		if(in_array($options->type, array('ata', 'cta')))
-		{
-			self::setMethod('sms', 'send', 1, '2');
-			if(isset($options->extension))
-			{
-				$options = self::setATAData($options);
-			}
-		}
-		else
-		{
-			self::setMethod('sms', 'send', 1);
-		}
+		$options = self::setATAData($options);
+
 		self::addInfos($options);
 		return self::$result;
 	}
@@ -247,8 +140,8 @@ class coolsms
 		{
 			$options = new stdClass();
 		}
-		self::setMethod('sms', 'sent', 0);
-		self::addInfos($options);
+		self::setAtMethod('sms', 'sent', 0);
+		self::addAtInfos($options);
 		return self::$result;
 	}
 
@@ -259,8 +152,8 @@ class coolsms
 	 */
 	public static function cancel($options)
 	{
-		self::setMethod('sms', 'cancel', 1);
-		self::addInfos($options);
+		self::setAtMethod('sms', 'cancel', 1);
+		self::addAtInfos($options);
 		return self::$result;
 	}
 
@@ -271,8 +164,8 @@ class coolsms
 	 */
 	public static function balance()
 	{
-		self::setMethod('sms', 'balance', 0);
-		self::addInfos($options = new stdClass());
+		self::setAtMethod('sms', 'balance', 0);
+		self::addAtInfos($options = new stdClass());
 		return self::$result;
 	}
 
@@ -284,8 +177,8 @@ class coolsms
 	 */
 	public static function status($options)
 	{
-		self::setMethod('sms', 'status', 0);
-		self::addInfos($options);
+		self::setAtMethod('sms', 'status', 0);
+		self::addAtInfos($options);
 		return self::$result;
 	}
 
@@ -296,8 +189,8 @@ class coolsms
 	 */
 	public static function register($options)
 	{
-		self::setMethod('senderid', 'register', 1, "1.1");
-		self::addInfos($options);
+		self::setAtMethod('senderid', 'register', 1, "1.1");
+		self::addAtInfos($options);
 		return self::$result;
 	}
 
@@ -308,8 +201,8 @@ class coolsms
 	 */
 	public static function verify($options)
 	{
-		self::setMethod('senderid', 'verify', 1, "1.1");
-		self::addInfos($options);
+		self::setAtMethod('senderid', 'verify', 1, "1.1");
+		self::addAtInfos($options);
 		return self::$result;
 	}
 
@@ -320,8 +213,8 @@ class coolsms
 	 */
 	public static function delete($options)
 	{
-		self::setMethod('senderid', 'delete', 1, "1.1");
-		self::addInfos($options);
+		self::setAtMethod('senderid', 'delete', 1, "1.1");
+		self::addAtInfos($options);
 		return self::$result;
 	}
 
@@ -332,8 +225,8 @@ class coolsms
 	 */
 	public static function get_senderid_list($options = null)
 	{
-		self::setMethod('senderid', 'list', 0, "1.1");
-		self::addInfos($options);
+		self::setAtMethod('senderid', 'list', 0, "1.1");
+		self::addAtInfos($options);
 		return self::$result;
 	}
 
@@ -344,8 +237,8 @@ class coolsms
 	 */
 	public static function set_default($options)
 	{
-		self::setMethod('senderid', 'set_default', 1, "1.1");
-		self::addInfos($options);
+		self::setAtMethod('senderid', 'set_default', 1, "1.1");
+		self::addAtInfos($options);
 		return self::$result;
 	}
 
@@ -356,8 +249,8 @@ class coolsms
 	 */
 	public static function get_default($options)
 	{
-		self::setMethod('senderid', 'get_default', 0, "1.1");
-		self::addInfos($options);
+		self::setAtMethod('senderid', 'get_default', 0, "1.1");
+		self::addAtInfos($options);
 		return self::$result;
 	}
 
@@ -368,8 +261,8 @@ class coolsms
 	 */
 	public static function register_alimtalk($options)
 	{
-		self::setMethod('alimtalk', 'register', 1, '1');
-		self::addInfos($options);
+		self::setAtMethod('alimtalk', 'register', 1, '1');
+		self::addAtInfos($options);
 		return self::$result;
 	}
 
@@ -380,8 +273,8 @@ class coolsms
 	 */
 	public static function get_alimtalk_templates($options)
 	{
-		self::setMethod('alimtalk', "templates/{$options->yellow_id}", 0, '1');
-		self::addInfos($options);
+		self::setAtMethod('alimtalk', "templates/{$options->yellow_id}", 0, '1');
+		self::addAtInfos($options);
 		return self::$result;
 	}
 
@@ -460,46 +353,31 @@ class coolsms
 	/**
 	 * 알림톡의 경우 SMS_API v2 로 보내기 위해 새로 데이터를 정렬 해준다. (임시)
 	 */
-	public static function setATAData($options)
+	public static function addInfos($options)
 	{
-		$options->extension = json_decode($options->extension);
-		$json_data = array();
-		foreach($options->extension as $k => $v)
-		{
-			if(!$v->to)
-			{
-				continue;
-			}
-			$obj = new stdClass();
-			$obj->type = $options->type;
-			$obj->to = $v->to;
-			$obj->text = $v->text;
-			$obj->from = $options->from;
-			if($options->type === 'ata')
-			{
-				$obj->template_code = $options->template_code;
-			}
-			$obj->sender_key = $options->sender_key;
-			if($options->datetime)
-			{
-				$obj->datetime = $options->datetime;
-			}
-			if($options->subject)
-			{
-				$obj->subject = $options->subject;
-			}
-			if($options->country)
-			{
-				$obj->country = $options->country;
-			}
-			if($options->refname)
-			{
-				$obj->refname = $options->refname;
-			}
-			$json_data[] = $obj;
-		}
-		$options->messages = json_encode($json_data);
-		unset($options->extension);
+		if (!isset($options)) $options = new \stdClass();
+		if (!isset($options->appId)) $options->appId = null;
+		if (!isset($options->devLanguage)) $options->devLanguage = sprintf("PHP REST API %s", self::$api_version);
+		if (!isset($options->osPlatform)) $options->osPlatform = self::getOS();
+		if (!isset($options->sdkVersion)) $options->sdkVersion = sprintf("PHP SDK %s", phpversion());
+		if (!isset($options->appVersion)) $options->appVersion = null;
+		$options->siteUser = '__private__';
+		$options->mode = 'real';
+		$options->forceSms = 'false';
+		$options->onlyAta = 'false';
+		$options->country = '82';
+		$options->subject = '';
+
+		// set salt & timestamp
+		$options->salt = uniqid();
+		$options->date = date('Y-m-d H:i:s');
+		self::$salt = $options->salt;
+		self::$date = $options->date;
+		// If basecamp is true '$coolsms_user' use
+		isset(self::$basecamp) ? $options->coolsms_user = self::$api_key : $options->api_key = self::$api_key;
+
+		$options->signature = self::getSignature($options->date, $options->salt);
+		self::$signature = $options->signature;
 
 		return $options;
 	}
@@ -621,5 +499,126 @@ class coolsms
 
 		curl_close($ch);
 		return $result;
+	}
+
+	/**
+	 * Set authentivate information for kakao.
+	 * @param $options
+	 */
+	private static function AddAtInfos($options)
+	{
+		self::$atSalt = uniqid();
+		self::$atTimestamp = (string)time();
+		if(!$options->User_Agent)
+		{
+			$options->User_Agent = sprintf("PHP REST API %s", self::$atVersion);
+		}
+		if(!$options->os_platform)
+		{
+			$options->os_platform = self::getOS();
+		}
+		if(!$options->dev_lang)
+		{
+			$options->dev_lang = sprintf("PHP %s", phpversion());
+		}
+		if(!$options->sdk_version)
+		{
+			$options->sdk_version = sprintf("PHP SDK %s", self::$atSdkVersion);
+		}
+		$options->salt = self::$atSalt;
+		$options->timestamp = self::$atTimestamp;
+
+		$options->api_key = self::$api_key;
+
+		$options->signature = self::kakaoGetSignature();
+		self::setAtContent($options);
+		self::kakaoCurlProcess();
+	}
+	private static function kakaoGetSignature()
+	{
+		return hash_hmac('md5', (string)self::$atTimestamp . self::$atSalt, self::$api_secret);
+	}
+
+	private static function setAtMethod($resource, $path, $method, $version = "1.6")
+	{
+		self::$atResource = $resource;
+		self::$atPath = $path;
+		self::$atMethod = $method;
+		self::$atVersion = $version;
+	}
+	/**
+	 * set http body content
+	 */
+	private static function setAtContent($options)
+	{
+		if(self::$atMethod)
+		{
+			self::$atContent = array();
+			foreach($options as $key => $val)
+			{
+				if($key != "image")
+				{
+					self::$atContent[$key] = sprintf("%s", $val);
+				}
+				else
+				{
+					self::$atContent[$key] = "@" . realpath("./$val");
+				}
+			}
+		}
+		else
+		{
+			foreach($options as $key => $val)
+			{
+				self::$atContent .= $key . "=" . urlencode($val) . "&";
+			}
+		}
+	}
+
+	private static function kakaoCurlProcess()
+	{
+		$ch = curl_init();
+		// Set host. 1 = POST , 0 = GET
+		if(self::$atMethod == 1)
+		{
+			$host = sprintf("%s%s/%s/%s", self::$atHost, self::$atResource, self::$atVersion, self::$atPath);
+		}
+		else
+		{
+			$host = sprintf("%s%s/%s/%s?%s", self::$atHost, self::$atResource, self::$atVersion, self::$atPath, self::$atContent);
+		}
+		curl_setopt($ch, CURLOPT_URL, $host);
+		curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, FALSE);
+		curl_setopt($ch, CURLOPT_SSLVERSION, 3); // SSL 버젼 (https 접속시에 필요)
+		curl_setopt($ch, CURLOPT_HEADER, 0); // 헤더 출력 여부
+		curl_setopt($ch, CURLOPT_POST, self::$atMethod); // Post Get 접속 여부
+		// Set POST DATA
+		if(self::$atMethod)
+		{
+			$header = array("Content-Type:multipart/form-data");
+			// route가 있으면 header에 붙여준다.
+			if(self::$atContent['route'])
+			{
+				$header[] = "User-Agent:" . self::$atContent['route'];
+			}
+			curl_setopt($ch, CURLOPT_HTTPHEADER, $header);
+			curl_setopt($ch, CURLOPT_POSTFIELDS, self::$atContent);
+		}
+		curl_setopt($ch, CURLOPT_TIMEOUT, 10); // TimeOut 값
+		curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1); // 결과값을 받을것인지
+		self::$result = json_decode(curl_exec($ch));
+		// unless http status code is 200. throw exception.
+		$http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+		if($http_code != 200)
+		{
+			self::$error_flag = true;
+		}
+		// Check connect errors
+		if(curl_errno($ch))
+		{
+			self::$error_flag = true;
+			self::$result = curl_error($ch);
+		}
+		curl_close($ch);
 	}
 }
