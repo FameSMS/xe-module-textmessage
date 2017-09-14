@@ -127,12 +127,14 @@ class coolsms
 			if (!$options->kakaoOptions->senderKey)
 			{
 				$options->type = 'sms';
+				unset($options->kakaoOptions);
 			}
 			else if ($options->type === 'ata')
 			{
 				if(!$options->kakaoOptions->template_code)
 				{
 					$options->type = 'sms';
+					unset($options->kakaoOptions);
 				}
 			}
 		}
