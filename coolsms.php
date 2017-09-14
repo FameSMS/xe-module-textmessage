@@ -69,7 +69,6 @@ class coolsms
 		curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, FALSE);
 		curl_setopt($ch, CURLOPT_HEADER, 0);
 		curl_setopt($ch, CURLOPT_POST, 1);
-
 		$header = array(
 			"Content-Type: application/json",
 			'Authorization: HMAC-MD5 ApiKey='.self::$api_key.', Date='.self::$date.', Salt='.self::$salt.', Signature='.self::$signature,
@@ -122,10 +121,197 @@ class coolsms
 	public static function send($options)
 	{
 		$options->type = strtolower($options->type);
-		$options = self::setATAData($options);
 
-		self::addInfos($options);
+		if(in_array($options->type, array('ata', 'cta')))
+		{
+			if (!$options->kakaoOptions->senderKey)
+			{
+				$options->type = 'sms';
+			}
+			else if ($options->type === 'ata')
+			{
+				if(!$options->kakaoOptions->template_code)
+				{
+					$options->type = 'sms';
+				}
+			}
+		}
+		$options = self::setSmsData($options);
+
 		return self::$result;
+	}
+
+	protected static function setSmsData($options)
+	{
+		$createOutput = self::createGroup($options);
+		if($createOutput)
+		{
+			$options->groupId = $createOutput->groupId;
+			$addGroupMessageOutput = self::addGroupMessage($options);
+
+			$sendGroupMessageOutput = self::sendGroupMessage($options->groupId);
+		}
+
+		return true;
+	}
+
+	/**
+	 * @param $options
+	 * @return bool|object
+	 */
+	public static function createGroup($options)
+	{
+		return self::smsRequest('createGroup', $options);
+	}
+
+	public static function addGroupMessage($options)
+	{
+		if (!isset($options->groupId) || !isset($options->to) || !isset($options->text) || !isset($options->from))
+		{
+			return false;
+		}
+		$args = new \stdClass();
+		$args->messages = array();
+		$args->messages[0] = new \stdClass();
+		$sendNumber = explode(',', $options->to);
+		$args->messages[0]->to = new \stdClass();
+		$args->messages[0]->to->recipients = $sendNumber;
+		$args->messages[0]->from = $options->from;
+		$args->messages[0]->text = $options->text;
+		if ($options->type)
+		{
+			$args->messages[0]->type = $options->type;
+		}
+		else
+		{
+			$args->messages[0]->type = 'SMS';
+		}
+
+		if ($options->country)
+		{
+			$args->messages[0]->country = $options->country;
+		}
+
+		if ($options->subject)
+		{
+			$args->messages[0]->subject = $options->subject;
+		}
+
+		if ($options->imageId)
+		{
+			$args->messages[0]->imageId = $options->imageId;
+		}
+
+		if ($options->kakaoOptions)
+		{
+			$args->messages[0]->kakaoOptions = new \stdClass();
+			if ($options->kakaoOptions->senderKey)
+			{
+				$args->messages[0]->kakaoOptions->senderKey = $options->kakaoOptions->senderKey;
+			}
+
+			if ($options->kakaoOptions->templateCode)
+			{
+				$args->messages[0]->kakaoOptions->templateCode = $options->kakaoOptions->templateCode;
+			}
+
+			if ($options->kakaoOptions->buttonName)
+			{
+				$args->messages[0]->kakaoOptions->buttonName = $options->kakaoOptions->buttonName;
+			}
+
+			if ($options->kakaoOptions->buttonUrl)
+			{
+				$args->messages[0]->kakaoOptions->buttonUrl = $options->kakaoOptions->buttonUrl;
+			}
+		}
+
+		$encoding_json_data = json_encode($args);
+		$obj = new \stdClass();
+		$obj->encoding_json_data = $encoding_json_data;
+		return self::smsRequest(sprintf('group/%s/addMessages', $options->groupId), $obj);
+	}
+
+	protected static function sendGroupMessage($groupId)
+	{
+		if(!$groupId)
+		{
+			return false;
+		}
+
+		$obj = new stdClass();
+		$obj->encoding_json_data = null;
+		return self::smsRequest(sprintf('group/%s/sendMessages', $groupId), $obj);
+	}
+
+	/**
+	 * @param $resource
+	 * @param $options
+	 * @return bool|object
+	 */
+	protected static function smsRequest($resource, $options)
+	{
+		if(!$resource)
+		{
+			return false;
+		}
+
+		self::setResource($resource);
+
+		$options = self::addInfos($options);
+		self::setContent($options);
+		self::curlProcess();
+		return self::getResult();
+	}
+
+	private static function setContent($options)
+	{
+		if ($options->encoding_json_data)
+		{
+			if ($options->json_option == 'SimpleMessage')
+			{
+				self::setApiConfig('SimpleMessage', '3');
+			}
+			self::$content = $options->encoding_json_data;
+			return;
+		}
+
+		self::$content = new \stdClass;
+		if ($options->json_option)
+		{
+			$json_option = $options->json_option;
+		}
+		else
+		{
+			$json_option = 'groupOptions';
+		}
+		self::$content->$json_option = new \stdClass;
+
+		foreach ($options as $key => $val)
+		{
+			self::$content->$json_option->$key = $val;
+		}
+		if ($options->json_option !== 'groupOptions')
+		{
+			self::$content->$json_option = array(self::$content->$json_option);
+		}
+
+		self::$content = json_encode(self::$content);
+	}
+
+	protected static function setApiConfig($api_name, $api_version)
+	{
+		if (!isset($api_name) || !isset($api_version))
+		{
+			return false;
+		}
+		self::$api_name = $api_name;
+		self::$api_version = $api_version;
+	}
+
+	protected static function setResource($resource, $is_post = false)
+	{
+		self::$resource = $resource;
 	}
 
 	/**

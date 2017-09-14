@@ -26,14 +26,18 @@ class textmessageController extends textmessage
 	 * @param[in] $user_id true means auto, false means none, otherwise, use in userid
 	 * @return Object(error, message)
 	 **/
-	function sendMessage($args, $basecamp=FALSE) 
+	function sendMessage($args, $basecamp=FALSE)
 	{
 		$oTextmessageModel = getModel('textmessage');
 		$sms = textmessageModel::getCoolSMS($basecamp);
 		$options = new stdClass();
 		if($oTextmessageModel->getSlnRegKey() && !$args->srk)
 		{
-			$options->srk = $oTextmessageModel->getSlnRegKey();
+			$options->appId = $oTextmessageModel->getSlnRegKey();
+		}
+		else
+		{
+			$options->appId = $args->srk;
 		}
 
 		// 기존 Textmessage 와 다른 args 옵션으로 인한 동기화하기
@@ -74,10 +78,15 @@ class textmessageController extends textmessage
 		if($args->reservdate) 	$options->datetime = $args->reservdate;
 		if($args->route) 		$options->route = $args->route;
 		if($args->app_version)  $options->app_version = $args->app_version;
-		if($args->sender_key)	$options->sender_key = $args->sender_key;
-		if($args->template_code) $options->template_code = $args->template_code;
-		if($args->button_name) $options->button_name = $args->button_name;
-		if($args->button_url) $options->button_url = $args->button_url;
+
+		if($args->sender_key)
+		{
+			$options->kakaoOptions = new stdClass();
+			$options->kakaoOptions->senderKey = $args->sender_key;
+			if($args->template_code) $options->template_code = $args->template_code;
+			if($args->button_name) $options->button_name = $args->button_name;
+			if($args->button_url) $options->button_url = $args->button_url;
+		}
 
 		// 문자 전송
 		$result = $sms::send($options);
