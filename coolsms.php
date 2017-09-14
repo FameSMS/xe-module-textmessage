@@ -25,7 +25,7 @@ class coolsms
 	public static $api_name = 'GroupMessage';
 	public static $error_flag = false;
 
-	// This for KaKao
+	// This is for KaKao
 	public static $atHost = 'http://api.coolsms.co.kr/';
 
 	private static $atResource;
