@@ -70,17 +70,12 @@ class textmessageAdminView extends textmessage
 	/**
 	 * 기본설정 페이지
 	 */
-	function dispTextmessageAdminConfig() 
+	function dispTextmessageAdminConfig()
 	{
-		$config = textmessageModel::getConfig();
+		/** @var $oTextmessageModel textmessageModel */
+		$oTextmessageModel = getModel('textmessage');
+		$config = $oTextmessageModel->getConfig();
 
-		$callback_url = Context::getDefaultUrl();
-		$callback_url_style = "";
-		if ($config->callback_url) $callback_url = $config->callback_url;
-		else $callback_url_style = 'style="color:red;"';
-
-		Context::set('callback_url', $callback_url);
-		Context::set('callback_url_style', $callback_url_style);
 		Context::set('config', $config);
 
 		// 템플릿 파일 지정
@@ -90,8 +85,11 @@ class textmessageAdminView extends textmessage
 	//발송내역 페이지 
 	function dispTextmessageAdminUsageStatement() 
 	{
-		$config = textmessageModel::getModuleConfig();
-		$sms = textmessageModel::getCoolSMS();
+		/** @var $oTextmessageModel textmessageModel */
+		$oTextmessageModel = getModel('textmessage');
+
+		$config = $oTextmessageModel->getModuleConfig();
+		$sms = $oTextmessageModel->getCoolSMS();
 
 		$count = Context::get('page_no');
 		$search_code = Context::get('search_code');

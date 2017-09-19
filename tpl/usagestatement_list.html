@@ -53,7 +53,7 @@
 			<tr class="row{$cycle_idx}">
 				<td>{$csutil->dispIndex($no, $page, $list_count)}</td>
 				<td><input type="checkbox" checked|cond="$check_reserve=='true'&&$val->result_code=='99'" name="cart[]" value="{$val->message_id}" onclick="checkResultCode(this, {$val->result_code})"/></td>
-                <td>{$val->type}</td>
+                <td>{$lang->smsType[$val->type]}</td>
                 <td>{htmlspecialchars($val->recipient_number)}</td>
 				<td><span cond="$val->reservflag=='Y'" class="reservdate">{zdate($val->reservdate, "Y-m-d H:i")}</span><span cond="$val->reservflag=='N'">-</span></td>
 				<td title="{htmlspecialchars($val->text)}">{htmlspecialchars($csutil->dispContent($val->text))}</td>

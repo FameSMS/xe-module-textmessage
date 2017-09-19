@@ -16,6 +16,10 @@
 		<value xml:lang="ko"><![CDATA[비밀번호]]></value>
 		<value xml:lang="en"><![CDATA[Password]]></value>
 	</item>
+	<item name="mtype">
+		<value xml:lang="ko"><![CDATA[문자종류]]></value>
+		<value xml:lang="en"><![CDATA[Message type]]></value>
+	</item>
 	<item name="callback_url">
 		<value xml:lang="ko"><![CDATA[콜백 URL]]></value>
 		<value xml:lang="en"><![CDATA[Callback URL]]></value>
@@ -23,6 +27,28 @@
 	<item name="balance">
 		<value xml:lang="ko"><![CDATA[잔액]]></value>
 		<value xml:lang="en"><![CDATA[Balance]]></value>
+	</item>
+	<item name="smsType" type="array">
+		<item name="SMS">
+			<value xml:lang="ko"><![CDATA[일반(SMS)]]></value>
+			<value xml:lang="en"><![CDATA[SMS]]></value>
+		</item>
+		<item name="LMS">
+			<value xml:lang="ko"><![CDATA[장문(LMS)]]></value>
+			<value xml:lang="en"><![CDATA[Long]]></value>
+		</item>
+		<item name="MMS">
+			<value xml:lang="ko"><![CDATA[포토(MMS)]]></value>
+			<value xml:lang="en"><![CDATA[Photo]]></value>
+		</item>
+		<item name="ATA">
+			<value xml:lang="ko"><![CDATA[알림톡(ATA)]]></value>
+			<value xml:lang="en"><![CDATA[Alim Talk]]></value>
+		</item>
+		<item name="CTA">
+			<value xml:lang="ko"><![CDATA[친구톡(CTA)]]></value>
+			<value xml:lang="en"><![CDATA[Friend Talk]]></value>
+		</item>
 	</item>
 	<item name="sms">
 		<value xml:lang="ko"><![CDATA[일반]]></value>
