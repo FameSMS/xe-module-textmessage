@@ -39,7 +39,6 @@ class textmessageController extends textmessage
 		{
 			$options->appId = $args->srk;
 		}
-
 		// 기존 Textmessage 와 다른 args 옵션으로 인한 동기화하기
 		if($args->recipient_no)
 		{

@@ -145,16 +145,115 @@ class coolsms
 
 	protected static function setSmsData($options)
 	{
+
 		$createOutput = self::createGroup($options);
+
+
+
 		if($createOutput)
 		{
 			$options->groupId = $createOutput->groupId;
-			$addGroupMessageOutput = self::addGroupMessage($options);
+			if($options->extension)
+			{
+				$addGroupMessageOutput = self::fixExtensionAddGroupMessage($options);
+			}
+			else
+			{
+				$addGroupMessageOutput = self::addGroupMessage($options);
+			}
+
 
 			$sendGroupMessageOutput = self::sendGroupMessage($options->groupId);
 		}
 
 		return true;
+	}
+
+	/**
+	 * Add to Group message for purplebook module.
+	 * @param $options
+	 * @return bool
+	 */
+	protected static function fixExtensionAddGroupMessage($options)
+	{
+		if(!$options->extension)
+		{
+			return false;
+		}
+
+		if (!isset($options->groupId))
+		{
+			return false;
+		}
+
+		$extension = json_decode($options->extension);
+		$args = new \stdClass();
+		$args->messages = array();
+		foreach ($extension as $key => $value)
+		{
+			if(!$value->to)
+			{
+				continue;
+			}
+
+			$args->messages[$key] = new \stdClass();
+			$sendNumber = explode(',', $value->to);
+			$args->messages[$key]->to = new \stdClass();
+			$args->messages[$key]->to->recipients = $sendNumber;
+			$args->messages[$key]->from = $options->from;
+			$args->messages[$key]->text = $value->text;
+			if ($options->type)
+			{
+				$args->messages[$key]->type = $options->type;
+			}
+			else
+			{
+				$args->messages[$key]->type = 'SMS';
+			}
+
+			if ($options->country)
+			{
+				$args->messages[$key]->country = $options->country;
+			}
+
+			if ($options->subject)
+			{
+				$args->messages[$key]->subject = $options->subject;
+			}
+
+			if ($options->imageId)
+			{
+				$args->messages[$key]->imageId = $options->imageId;
+			}
+
+			if ($options->kakaoOptions)
+			{
+				$args->messages[$key]->kakaoOptions = new \stdClass();
+				if ($options->kakaoOptions->senderKey)
+				{
+					$args->messages[$key]->kakaoOptions->senderKey = $options->kakaoOptions->senderKey;
+				}
+
+				if ($options->kakaoOptions->templateCode)
+				{
+					$args->messages[$key]->kakaoOptions->templateCode = $options->kakaoOptions->templateCode;
+				}
+
+				if ($options->kakaoOptions->buttonName)
+				{
+					$args->messages[$key]->kakaoOptions->buttonName = $options->kakaoOptions->buttonName;
+				}
+
+				if ($options->kakaoOptions->buttonUrl)
+				{
+					$args->messages[$key]->kakaoOptions->buttonUrl = $options->kakaoOptions->buttonUrl;
+				}
+			}
+		}
+		$encoding_json_data = json_encode($args);
+		$obj = new stdClass();
+		$obj->encoding_json_data = $encoding_json_data;
+		return self::smsRequest(sprintf('group/%s/addMessages', $options->groupId), $obj);
 	}
 
 	/**
@@ -229,7 +328,7 @@ class coolsms
 		}
 
 		$encoding_json_data = json_encode($args);
-		$obj = new \stdClass();
+		$obj = new stdClass();
 		$obj->encoding_json_data = $encoding_json_data;
 		return self::smsRequest(sprintf('group/%s/addMessages', $options->groupId), $obj);
 	}
