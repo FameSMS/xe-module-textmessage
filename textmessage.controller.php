@@ -28,8 +28,9 @@ class textmessageController extends textmessage
 	 **/
 	function sendMessage($args, $basecamp=FALSE)
 	{
+		/** @var $oTextmessageModel textmessageModel */
 		$oTextmessageModel = getModel('textmessage');
-		$sms = textmessageModel::getCoolSMS($basecamp);
+		$sms = $oTextmessageModel->getCoolSMS($basecamp);
 		$options = new stdClass();
 		if($oTextmessageModel->getSlnRegKey() && !$args->srk)
 		{
@@ -82,9 +83,9 @@ class textmessageController extends textmessage
 		{
 			$options->kakaoOptions = new stdClass();
 			$options->kakaoOptions->senderKey = $args->sender_key;
-			if($args->template_code) $options->template_code = $args->template_code;
-			if($args->button_name) $options->button_name = $args->button_name;
-			if($args->button_url) $options->button_url = $args->button_url;
+			if($args->template_code) $options->kakaoOptions->template_code = $args->template_code;
+			if($args->button_name) $options->kakaoOptions->button_name = $args->button_name;
+			if($args->button_url) $options->kakaoOptions->button_url = $args->button_url;
 		}
 
 		// 문자 전송

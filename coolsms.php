@@ -145,16 +145,14 @@ class coolsms
 
 	protected static function setSmsData($options)
 	{
-
 		$createOutput = self::createGroup($options);
-
-
 
 		if($createOutput)
 		{
 			$options->groupId = $createOutput->groupId;
 			if($options->extension)
 			{
+				// Create a new function to avoid mistakes. (BJRambo)
 				$addGroupMessageOutput = self::fixExtensionAddGroupMessage($options);
 			}
 			else
