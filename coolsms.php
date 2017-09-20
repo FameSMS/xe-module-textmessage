@@ -539,7 +539,9 @@ class coolsms
 	}
 
 	/**
-	 * 알림톡의 경우 SMS_API v2 로 보내기 위해 새로 데이터를 정렬 해준다. (임시)
+	 * Add to sns info for REST API V3.
+	 * @param $options
+	 * @return stdClass
 	 */
 	public static function addInfos($options)
 	{
@@ -568,125 +570,6 @@ class coolsms
 		self::$signature = $options->signature;
 
 		return $options;
-	}
-
-	/**
-	 * 알림톡 발송
-	 */
-	public static function sendATA($options)
-	{
-		// 인증정보만 가진 Object를 따로 생성
-		$authentication_obj = new stdClass();
-		$authentication_obj->api_key = $options->api_key;
-		$authentication_obj->coolsms_user = $options->coolsms_user;
-		$authentication_obj->timestamp = $options->timestamp;
-		$authentication_obj->salt = $options->salt;
-		$authentication_obj->signature = $options->signature;
-
-		// create group
-		self::$method = 0;
-		self::setContent($authentication_obj);
-		$host = sprintf("%s%s/%s/%s?%s", self::$host, self::$resource, self::$version, "new_group", self::$content);
-		$result = self::requestGet($host);
-		if(self::$error_flag == true)
-		{
-			self::$result->code = $result;
-			return;
-		}
-		$group_id = $result->group_id;
-
-		// add messages
-		self::$method = 1;
-		self::setContent($options);
-		$host = sprintf("%s%s/%s/groups/%s/%s", self::$host, self::$resource, self::$version, $group_id, "add_messages.json");
-		$result = self::requestPOST($host);
-		if(self::$error_flag == true)
-		{
-			self::$result->code = $result;
-			return;
-		}
-
-		// success, error count 구하기
-		$success_count = 0;
-		$error_count = 0;
-		foreach($result as $k => $v)
-		{
-			$success_count = $success_count + $v->success_count;
-			$error_count = $error_count + $v->error_count;
-		}
-		self::$result->success_count = $success_count;
-		self::$result->error_count = $error_count;
-
-		// send messages
-		self::$method = 1;
-		self::setContent($authentication_obj);
-		$host = sprintf("%s%s/%s/groups/%s/%s", self::$host, self::$resource, self::$version, $group_id, "send");
-		$result = self::requestPOST($host);
-		if(self::$error_flag == true)
-		{
-			self::$result->code = $result;
-			return;
-		}
-	}
-
-	// http request GET
-	protected static function requestGet($host)
-	{
-		$ch = curl_init();
-		curl_setopt($ch, CURLOPT_URL, $host);
-		curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, FALSE);
-		curl_setopt($ch, CURLOPT_SSLVERSION, 3); // SSL 버젼 (https 접속시에 필요)
-		curl_setopt($ch, CURLOPT_HEADER, 0); // 헤더 출력 여부
-		curl_setopt($ch, CURLOPT_POST, self::$method); // Post Get 접속 여부
-		curl_setopt($ch, CURLOPT_TIMEOUT, 10); // TimeOut 값
-		curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1); // 결과값을 받을것인지
-
-		$result = json_decode(curl_exec($ch));
-
-		// Check connect errors
-		if(curl_errno($ch))
-		{
-			self::$error_flag = true;
-			$result = curl_error($ch);
-		}
-
-		curl_close($ch);
-		return $result;
-	}
-
-	// http request POST
-	protected static function requestPOST($host)
-	{
-		$ch = curl_init();
-		curl_setopt($ch, CURLOPT_URL, $host);
-		curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, FALSE);
-		curl_setopt($ch, CURLOPT_SSLVERSION, 3); // SSL 버젼 (https 접속시에 필요)
-		curl_setopt($ch, CURLOPT_HEADER, 0); // 헤더 출력 여부
-		curl_setopt($ch, CURLOPT_POST, self::$method); // Post Get 접속 여부
-		curl_setopt($ch, CURLOPT_TIMEOUT, 10); // TimeOut 값
-		curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1); // 결과값을 받을것인지
-		$header = array("Content-Type:multipart/form-data");
-
-		// route가 있으면 header에 붙여준다.
-		if(self::$content['route'])
-		{
-			$header[] = "User-Agent:" . self::$content['route'];
-		}
-
-		curl_setopt($ch, CURLOPT_HTTPHEADER, $header);
-		curl_setopt($ch, CURLOPT_POSTFIELDS, self::$content);
-
-		$result = json_decode(curl_exec($ch));
-
-		// Check connect errors
-		if(curl_errno($ch))
-		{
-			self::$error_flag = true;
-			$result = curl_error($ch);
-		}
-
-		curl_close($ch);
-		return $result;
 	}
 
 	/**
